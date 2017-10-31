@@ -67,6 +67,9 @@ public:
   ///* Sigma point spreading parameter
   double lambda_;
 
+  ///* the number of augmented sigma points
+  int no_sigma_pts_aug_;
+
 
   /**
    * Constructor
@@ -108,6 +111,18 @@ public:
    * @param meas_package The measurement at k+1
    */
   void Initialize(MeasurementPackage const & meas_package);
+
+  
+  float NormalizeAngle(float angle) {
+    while( angle < -M_PI) {
+      angle += 2*M_PI;
+    }
+    while( angle > M_PI) {
+      angle -= 2*M_PI;
+    }
+
+    return angle;
+  }
 };
 
 #endif /* UKF_H */
