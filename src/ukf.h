@@ -70,6 +70,12 @@ public:
   ///* the number of augmented sigma points
   int no_sigma_pts_aug_;
 
+  ///* the current NIS for radar
+  double NIS_radar_ {0};
+  
+    ///* the current NIS for laser
+  double NIS_laser_ {0};
+
 
   /**
    * Constructor
@@ -112,7 +118,7 @@ public:
    */
   void Initialize(MeasurementPackage const & meas_package);
 
-  
+
   float NormalizeAngle(float angle) {
     while( angle < -M_PI) {
       angle += 2*M_PI;
