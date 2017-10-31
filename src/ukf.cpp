@@ -12,7 +12,7 @@ using std::vector;
  */
 UKF::UKF() {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = false;
+  use_laser_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -251,6 +251,45 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the lidar NIS.
   */
+
+  // p_x, p_y
+  int n_z = 2;
+  
+  //create matrix for sigma points in measurement space
+  MatrixXd Zsig = MatrixXd(n_z, no_sigma_pts_aug_);
+  //mean predicted measurement
+  VectorXd z_pred = VectorXd(n_z);  
+  //measurement covariance matrix S
+  MatrixXd S = MatrixXd(n_z,n_z);
+
+  //transform sigma points into measurement space
+  for(int i = 0; i < Xsig_pred_.cols(); i++) {
+    VectorXd col = Xsig_pred_.col(i);
+    // just copy p_x and p_y
+    Zsig.col(i) << col(0), col(1);
+  }
+
+  //calculate mean predicted measurement
+  z_pred = Zsig * weights_;
+
+  //calculate measurement covariance matrix S
+  MatrixXd R = MatrixXd::Zero(n_z, n_z);
+  R.diagonal() << std_laspx_*std_laspx_, std_laspy_*std_laspy_;
+  S = Zsig.colwise() - z_pred;
+  S = MatrixXd(S.array().rowwise() * weights_.transpose().array()) * S.transpose();
+  S += R;
+
+  //calculate cross correlation matrix
+  MatrixXd Tc = Xsig_pred_.colwise() - x_;
+  Tc = MatrixXd(Tc.array().rowwise() * weights_.transpose().array());
+  Tc = Tc * Zsig.transpose();
+  
+  //calculate Kalman gain K;
+  MatrixXd K = Tc * S.inverse();
+  
+  //update state mean and covariance matrix
+  x_ += K * (meas_package.raw_measurements_ - z_pred);
+  P_ -= K * S * K.transpose();
 }
 
 /**
@@ -292,7 +331,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   z_pred = Zsig * weights_;
 
   //calculate measurement covariance matrix S
-  MatrixXd R = MatrixXd::Zero(3,3);
+  MatrixXd R = MatrixXd::Zero(n_z,n_z);
   R.diagonal() << std_radr_*std_radr_, std_radphi_*std_radphi_, std_radrd_*std_radrd_;
   S = Zsig.colwise() - z_pred;
   S = MatrixXd(S.array().rowwise() * weights_.transpose().array()) * S.transpose();
